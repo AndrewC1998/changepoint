@@ -1,9 +1,7 @@
 cpt.mean=function(data,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat="Normal",class=TRUE,param.estimates=TRUE,minseglen=1){
   checkData(data)
   if(minseglen<1){minseglen=1;warning('Minimum segment length for a change in mean is 1, automatically changed to be 1.')}
-  if(test.stat=="CUSUM"){stop("CUSUM test has moved to the changepoint.np package.")}
-  else if(!(test.stat=="Normal")){ stop("Invalid test statistic, must be Normal.") }
-  
+    if(!((test.stat=="Normal")||(test.stat=="CUSUM"))){ stop("Invalid test statistic, must be Normal or CUSUM") }
   if(penalty == "CROPS"){
     # browser()
     if(is.numeric(pen.value)){
@@ -20,17 +18,28 @@ cpt.mean=function(data,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat="N
       stop('For CROPS, pen.value must be supplied as a numeric vector and must be of length 2')
     }
   }
-  
+
   if(test.stat=="Normal"){
     if(method=="AMOC"){
       return(single.mean.norm(data,penalty,pen.value,class,param.estimates,minseglen))
     }
     else if(method=="PELT" || method=="BinSeg"){
-      
-      return(multiple.mean.norm(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen)) 
+
+      return(multiple.mean.norm(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen))
     }
     else{
       stop("Invalid Method, must be AMOC, PELT or BinSeg.")
+    }
+  }else if(test.stat=="CUSUM"){
+    warning('Traditional penalty values are not appropriate for the CUSUM test statistic')
+    if(method=="AMOC"){
+      return(single.mean.cusum(data,penalty,pen.value,class,param.estimates,minseglen))
+    }
+    else if(method=="SegNeigh" || method=="BinSeg"){
+      return(multiple.mean.cusum(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen))
+    }
+    else{
+      stop("Invalid Method, must be AMOC, SegNeigh or BinSeg")
     }
   }
 }
@@ -72,14 +81,14 @@ cpt.var=function(data,penalty="MBIC",pen.value=0,know.mean=FALSE, mu=NA,method="
       stop('For CROPS, pen.value must be supplied as a numeric vector and must be of length 2')
     }
   }
-  
+
   if(test.stat =="Normal"){
-    
+
     if(method=="AMOC"){
       return(single.var.norm(data,penalty,pen.value,know.mean,mu,class,param.estimates,minseglen))
     }
     else if(method=="PELT" || method=="BinSeg"){
-      
+
       return(multiple.var.norm(data,mul.method=method,penalty,pen.value,Q,know.mean,mu,class,param.estimates,minseglen))
     }
     else{
@@ -87,10 +96,19 @@ cpt.var=function(data,penalty="MBIC",pen.value=0,know.mean=FALSE, mu=NA,method="
     }
   }
   else if(test.stat=="CSS"){
-    stop("CSS test has moved to the changepoint.np package.")
+    warning('Traditional penalty values are not appropriate for the CSS test statistic')
+   if(method=="AMOC"){
+     return(single.var.css(data,penalty,pen.value,class,param.estimates,minseglen))
+   }
+   else if(method=="PELT" || method=="SegNeigh" || method=="BinSeg"){
+     return(multiple.var.css(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen))
+   }
+   else{
+     stop("Invalid Method, must be AMOC, SegNeigh or BinSeg")
+   }
   }
   else{
-    stop("Invalid test statistic, must be Normal.")
+    stop("Invalid test statistic, must be Normal or CSS.")
   }
 }
 
@@ -116,12 +134,12 @@ cpt.meanvar=function(data,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat
     }
   }
   if(test.stat=="Normal"){
-    
+
     if(method=="AMOC"){
       return(single.meanvar.norm(data,penalty,pen.value,class,param.estimates,minseglen))
     }
     else if(method=="PELT" || method=="BinSeg"){
-      
+
       return(multiple.meanvar.norm(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen))
     }
     else{
@@ -144,7 +162,7 @@ cpt.meanvar=function(data,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat
       return(single.meanvar.exp(data,penalty,pen.value,class,param.estimates,minseglen))
     }
     else if(method=="PELT" || method=="BinSeg"){
-      
+
       return(multiple.meanvar.exp(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen))
     }
     else{
@@ -156,7 +174,7 @@ cpt.meanvar=function(data,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat
       return(single.meanvar.poisson(data,penalty,pen.value,class,param.estimates,minseglen))
     }
     else if(method=="PELT" || method=="BinSeg"){
-      
+
       return(multiple.meanvar.poisson(data,mul.method=method,penalty,pen.value,Q,class,param.estimates,minseglen))
     }
     else{
@@ -171,7 +189,7 @@ cpt.meanvar=function(data,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat
 checkData = function(data){
   if(!is.numeric(data)){
     stop("Only numeric data allowed")
-  }  
+  }
   if(anyNA(data)){stop("Missing value: NA is not allowed in the data as changepoint methods assume regularly spaced data.")}
-  
+
 }
