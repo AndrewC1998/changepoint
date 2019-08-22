@@ -89,6 +89,97 @@ void meanvar_poisson(double *SS, int *size, int *n, int *p, int *minorder, int *
     }
 }
 
+void mll_ar(double *SS, int *size, int *n, int *p, int *minorder, int optimalorder, int *maxorder, int *start, int *end, double *cost, double *tol, int *error, double *shape, int *MBIC){
+  //SS    - Summary statistics
+  //m     - number of rows of SS
+  //n     - number of columns of SS
+  //p     - number of regressors, nb m = (p+1)*(p+2)/2
+  //start - index at start of segment
+  //end   - index at end of segment
+  //tol   - tolerance for lm
+  //error - error index
+  //shape - if>0, cost=-2loglike @ fixed shape/variance
+  //        if=0, cost=-2logLik()
+  //        if<0, cost=RSS
+  //MBIC  - 1 if MBIC penalty used, 0 if not.
+
+  //-- memory allocation --
+  //Summary statistics for segment
+
+  void RegQuadCost_SS();
+  void mll_reg();
+  int tmpn = *n;
+  int tmpp = *p;
+  int tmpsize = *size;
+  int resizer;
+  double tmpcost;
+
+  double *sumstat;
+  sumstat = (double *)calloc((*n-1)*(*p+1), sizeof(double));
+  int a;
+  for(a = 0; a < (*p+1)*(*n-1); a++){
+    sumstat[a] = SS[a];
+  }
+
+  int k;
+  double tmpBIC;
+  double BIC = INFINITY;
+
+  /*for(k = *minorder; k <= *maxorder; k++){
+
+    double *Sumstats;
+	  Sumstats = (double *)calloc(tmpn * tmpsize, sizeof(double));
+
+    int nvalue, mvalue;
+    nvalue = tmpn - 1;
+    mvalue = tmpp + 1;
+
+    RegQuadCost_SS(sumstat, &nvalue, &mvalue, Sumstats, &tmpsize);
+    mll_reg(Sumstats, &tmpsize, &tmpn, &tmpp, minorder, k, maxorder, &start, &end, &cost, tol, error, shape, MBIC);
+    //line above causes the error but all the printed value of each loop are correct and everything is freed correctly
+    //I think this is a knock on error from the loop being updated
+    free(Sumstats);
+
+		tmpBIC = k * log( tmpn - 1 ) + *cost;
+
+    if(tmpBIC <= BIC){
+      tmpcost = *cost;
+      optimalorder = optimalorder + 1;
+      tmpn = tmpn - 1;
+      tmpp = tmpp + 1;
+      tmpsize = ((tmpp + 1) * (tmpp + 2)) * 0.5;
+      BIC = tmpBIC;
+
+      double tmpsumstat[((tmpp+1)*(tmpn-1)-1)];
+      int r,s;
+      for(r = 0; r < 2*(tmpn-1); r++){
+        tmpsumstat[r] = sumstat[(r+1)];
+      }
+      for(r = 2*(tmpn-1); r < 3*(tmpn-1); r++){
+        tmpsumstat[r] = sumstat[r-(2*(tmpn-1))];
+      }
+      if( (tmpp+1) > 3){
+        for(s = 3; s <= (tmpp+1); s++){
+          for(r = s*(tmpn-1); r < (s+1)*(tmpn-1); r++){
+            tmpsumstat[r] = sumstat[r-(s*(tmpn-1))+((s-1)*tmpn)];
+          }
+        }
+      }
+      resizer = (tmpp+1)*(tmpn-1);
+      sumstat = (double *)realloc(sumstat, resizer * sizeof(double));  // there is something wrong with this and the next 4 lines
+      int b;
+      for(b = 0; b < (tmpp+1)*(tmpn-1); b++){
+        sumstat[b] = tmpsumstat[b];
+      }
+    }else{
+      *n = tmpn + 1;
+      optimalorder = optimalorder - 1;
+      *cost = tmpcost;
+      break;
+    }
+	} */
+}
+
 //Evaluate the regression quadratic cost function based on summary statistics
 void mll_reg(double *SS, int *size, int *n, int *p, int *minorder, int *optimalorder, int *maxorder, int *start, int *end, double *cost, double *tol, int *error, double *shape, int *MBIC){
   //SS    - Summary statistics
@@ -97,7 +188,7 @@ void mll_reg(double *SS, int *size, int *n, int *p, int *minorder, int *optimalo
   //p     - number of regressors, nb m = (p+1)*(p+2)/2
   //start - index at start of segment
   //end   - index at end of segment
-  //tol   - tolerence for lm
+  //tol   - tolerance for lm
   //error - error index
   //shape - if>0, cost=-2loglike @ fixed shape/variance
   //        if=0, cost=-2logLik()
@@ -289,6 +380,32 @@ void RegQuadCost_SS(double *X, int *n, int *nc, double *SS, int *m){
   return;
 }
 
+//Nonparametric additions to the package
+
+void nonparametric_ed(double sumstatout[], int tstar, int checklist, int *nquantiles, int *n, double *cost, int *MBIC){
+
+  double Fkl;
+  double tmp_cost = 0;
+  *cost = 0;
+  int nseg = tstar - checklist;
+  int isum;
+
+  for(isum = 0; isum < *nquantiles; isum++){
+    Fkl = (sumstatout[isum])/(nseg);
+    tmp_cost = (tstar-checklist)*(Fkl*log(Fkl)+(1-Fkl)*log(1-Fkl));
+    if(!isnan(tmp_cost)){
+      *cost = *cost + tmp_cost;
+    }
+    else{
+      *cost = *cost;
+    }
+  }
+  if(*MBIC==0){
+    *cost = (-2 * (log(2 * *n - 1)) * (*cost)) / (*nquantiles);
+  }else{
+    *cost = ((-2 * (log(2 * *n - 1)) * (*cost)) / (*nquantiles)); // I think this needs added here: + log(*n);
+  }
+}
 
 //Find the maximum case
 void max_which(double *array, int n, double *maxval, int *maxid){

@@ -8,7 +8,7 @@ cpt.reg <- function(data, penalty="MBIC", pen.value=0, method="PELT", dist="Norm
   if(!is.array(data) || !is.numeric(data))  ##Further checks applied later
     stop("Argument 'data' must be a numerical matrix/array.")
   if(!is.character(penalty) || length(penalty)>1)
-    stop("Argument 'penelty' is invalid.")
+    stop("Argument 'penalty' is invalid.")
     #value of 'penalty' & 'pen.value' checked within changepoint::penalty_decision
   if(!is.character(method) || length(method)>1)
     stop("Argument 'method' is invalid.")
@@ -181,7 +181,7 @@ CptReg_PELT_Normal <- function(data, penalty.value=0, minseglen=3, shape=0,
   answer[[7]]=1
   on.exit(.C("FreePELT",answer[[7]]))
 
-  answer <- .C('PELT', cost_func=cost_func, sumstat=as.double(data), n=as.integer(n), m=as.integer(p+1), pen=as.double(penalty.value), cptsout=vector("integer",n), error=as.integer(err), shape=as.double(shape), minorder=as.integer(0), optimalorder = as.integer(0), maxorder = as.integer(0), minseglen=as.integer(minseglen), tol=as.double(tol), lastchangelike=vector("double",n+1), lastchangecpts=vector("integer",n+1), numchangecpts=vector("integer",n+1), MBIC=as.integer(MBIC))
+  answer <- .C('PELT', cost_func=cost_func, sumstat=as.double(data), n=as.integer(n), m=as.integer(p+1), pen=as.double(penalty.value), cptsout=vector("integer",n), error=as.integer(err), shape=as.double(shape), minorder=as.integer(0), optimalorder = vector("integer",n+1), maxorder = as.integer(0), minseglen=as.integer(minseglen), tol=as.double(tol), lastchangelike = vector("double",n+1), bicvalues = vector("double",n+1), lastchangecpts = vector("integer",n+1), numchangecpts = vector("integer",n+1), MBIC=as.integer(MBIC))
 
 
   if(answer$err!=0){

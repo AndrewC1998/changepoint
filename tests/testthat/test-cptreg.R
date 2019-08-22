@@ -25,6 +25,47 @@ for(i in rn){
 }
 NAdata[1] <- NA
 data <- list(singmeandata,mulmeandata, nochangedata, singvardata, mulvardata, mulmeanvardata, mulmeanvarexpdata, mulmeanvarpoisdata, constantdata, NAdata, shortdata, negativedata, characterdata)
+otherdata <- list(singmeandata,mulmeandata, nochangedata, singvardata, mulvardata, mulmeanvardata, mulmeanvarexpdata, mulmeanvarpoisdata, constantdata)
+
+for(i in 1:length(otherdata)){
+  expect_error(cpt.reg(design(otherdata[[i]],1), penalty = 1), "Argument 'penalty' is invalid.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), method = 1), "Argument 'method' is invalid.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), method = "other method"), "Invalid method, must be AMOC or PELT.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), dist = 1), "Argument 'dist' is invalid.")
+
+  expect_warning(cpt.reg(design(otherdata[[i]],1), dist = "Exponential"), "dist = Exponential is not supported. Converted to dist='Normal'")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), class = 1), "Argument 'class' is invalid.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), param.estimates = 1), "Argument 'param.estimates' is invalid.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), minseglen = "character"), "Argument 'minseglen' is invalid.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), minseglen = -2), "Argument 'minseglen' must be positive integer.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), tol = "character"), "Argument 'tol' is invalid.")
+
+  expect_error(cpt.reg(design(otherdata[[i]],1), tol = -2), "Argument 'tol' must be positive.")
+
+  expect_warning(cpt.reg(design(otherdata[[i]],2), minseglen = 1), "minseglen is too small, set to: 4")
+
+  for(j in 1:10){
+    expect_error(cpt.reg(design(otherdata[[i]],j), minseglen = nrow(design(otherdata[[i]],j))), "Minimum segment length is too large to include a change in this data.")
+
+    expect_error(changepoint:::check_data( data = array(design(otherdata[[i]],j),dim=c(1,dim(design(otherdata[[i]],j)))), minseglen = "a"))
+  }
+
+  expect_warning(expect_error(changepoint:::check_data(design(otherdata[[i]],length(otherdata[[i]]) - 1)), "More regressors than observations."), "Due to the order of this model, there is a high risk of overfitting the data")
+}
+
+expect_error(changepoint:::check_data(data = c(1,2,3)), "Argument 'data' must be a numerical matrix.")
+
+expect_error(changepoint:::check_data(data = as.array(c(1,2,3))), "Argument 'data' must be a numerical matrix.")
+
+
 
 designdata <- list(singmeandata,mulmeandata, nochangedata, singvardata, mulvardata, mulmeanvardata, mulmeanvarexpdata, mulmeanvarpoisdata, constantdata)
 for(i in 1:length(designdata)){
@@ -46,5 +87,3 @@ for(i in 1:length(data)){
   }
  }
 }
-
-
